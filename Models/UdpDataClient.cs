@@ -18,24 +18,20 @@ namespace LudControl.Models
             _udpClient = new UdpClient();
         }
 
-        public async Task<string> SubscribeAsync()
+        public void SubscribeAsync()
         {
             byte[] data = Encoding.ASCII.GetBytes("ADD_ME");
-            await _udpClient.SendAsync(data, data.Length, _serverEndPoint);
+            _udpClient.SendAsync(data, data.Length, _serverEndPoint);
 
-            var result = await _udpClient.ReceiveAsync();
             IsSubscribed = true;
-            return Encoding.ASCII.GetString(result.Buffer);
         }
 
-        public async Task<string> UnsubscribeAsync()
+        public void UnsubscribeAsync()
         {
             byte[] data = Encoding.ASCII.GetBytes("DEL_ME");
-            await _udpClient.SendAsync(data, data.Length, _serverEndPoint);
+            _udpClient.SendAsync(data, data.Length, _serverEndPoint);
 
-            var result = await _udpClient.ReceiveAsync();
             IsSubscribed = false;
-            return Encoding.ASCII.GetString(result.Buffer);
         }
 
         public void Dispose()

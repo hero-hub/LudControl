@@ -12,9 +12,9 @@ namespace LudControl
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        private readonly TcpCommandServer _tcpServer;
-        private readonly UdpDataServer _udpServer;
-        private readonly UdpDataClient _udpClient;
+        private readonly TcpCommandServer _tcpServer; // TCP-сокет
+        private readonly UdpDataServer _udpServer; // UDP-сокет
+        private readonly UdpDataClient _udpClient; // UDP-клиент для работы с сокетом
 
         private PlotModel _plotModel;
         private string _commandViewer = string.Empty;
@@ -34,8 +34,8 @@ namespace LudControl
             Stop = new RelayCommand(_ => StopServer(), _ => _isConnected);
             Exit = new RelayCommand(_ => ExitApplication(), _ => true);
 
-            AddMeCommand = new RelayCommand(async _ => await SubscribeAsync(), _ => _isConnected && !_udpClient.IsSubscribed);
-            DelMeCommand = new RelayCommand(async _ => await UnsubscribeAsync(), _ => _isConnected && _udpClient.IsSubscribed);
+            AddMeCommand = new RelayCommand(_ => _udpClient.SubscribeAsync());
+            DelMeCommand = new RelayCommand(_ => _udpClient.UnsubscribeAsync());
         }
 
         public ICommand Start { get; }
@@ -53,7 +53,7 @@ namespace LudControl
                 OnPropertyChanged(nameof(PlotModel));
             }
         }
-        public string CommandViewer // Поле команд (нужно ли?)
+        public string CommandViewer // Поле вывода команд/ошибок
         {
             get => _commandViewer;
             set
@@ -68,13 +68,13 @@ namespace LudControl
             try
             {
                 await _tcpServer.StartAsync();
-                _ = _udpServer.StartAsync(); // Запускаем в фоновом режиме
+                _ = _udpServer.StartAsync();
                 _isConnected = true;
-                CommandViewer += "[System] Сервер запущен\n";
+                CommandViewer += "Сервер запущен\n";
             }
             catch (Exception ex)
             {
-                CommandViewer += $"[Error] Ошибка запуска: {ex.Message}\n";
+                CommandViewer += $"Ошибка запуска: {ex.Message}\n";
             }
         }
         private void StopServer()
@@ -82,38 +82,12 @@ namespace LudControl
             _tcpServer.Stop();
             _udpServer.Stop();
             _isConnected = false;
-            CommandViewer += "[System] Сервер остановлен\n";
+            CommandViewer += "Сервер остановлен\n";
         }
         private void ExitApplication()
         {
             StopServer();
             System.Windows.Application.Current.Shutdown();
-        }
-
-        private async Task SubscribeAsync()
-        {
-            try
-            {
-                var response = await _udpClient.SubscribeAsync();
-                CommandViewer += $"[UDP] {response}\n";
-            }
-            catch (Exception ex)
-            {
-                CommandViewer += $"[UDP Error] {ex.Message}\n";
-            }
-        }
-
-        private async Task UnsubscribeAsync()
-        {
-            try
-            {
-                var response = await _udpClient.UnsubscribeAsync();
-                CommandViewer += $"[UDP] {response}\n";
-            }
-            catch (Exception ex)
-            {
-                CommandViewer += $"[UDP Error] {ex.Message}\n";
-            }
         }
 
         private void OnTcpCommandReceived(string command)
@@ -123,42 +97,8 @@ namespace LudControl
 
         private void OnUdpDataReceived(string data)
         {
-            // Здесь можно обрабатывать поступающие данные
-            // Например, обновлять график
             CommandViewer += $"[UDP Data] {data}\n";
         }
-
-        /*private void SetupPlot() // Метод для графика
-        {
-            PlotModel = new PlotModel
-            {
-                Title = "Анализ дефектоскопии",
-                DefaultColors = new List<OxyColor> { OxyColors.Blue },
-                IsLegendVisible = true
-            };
-
-            PlotModel.Legends.Add(new OxyPlot.Legends.Legend
-            {
-                LegendPosition = OxyPlot.Legends.LegendPosition.RightTop,
-                LegendPlacement = OxyPlot.Legends.LegendPlacement.Outside,
-                LegendOrientation = OxyPlot.Legends.LegendOrientation.Vertical
-            });
-
-            PlotModel.Axes.Add(new OxyPlot.Axes.LinearAxis
-            {
-                Position = OxyPlot.Axes.AxisPosition.Left,
-                Title = "Величина сигнала",
-                MajorGridlineStyle = LineStyle.Solid,
-                MinorGridlineStyle = LineStyle.Dot
-            });
-
-            PlotModel.Axes.Add(new OxyPlot.Axes.LinearAxis
-            {
-                Position = OxyPlot.Axes.AxisPosition.Bottom,
-                Title = "Время (с)"
-            });
-        }*/
-
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propertyName)

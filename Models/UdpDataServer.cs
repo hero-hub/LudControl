@@ -11,13 +11,13 @@ namespace LudControl.Models
     public class UdpDataServer : IDisposable
     {
         private readonly UdpClient _udpServer;
-        private readonly HashSet<IPEndPoint> _subscribedClients = new HashSet<IPEndPoint>();
+        private readonly HashSet<IPEndPoint> _subscribedClients = new HashSet<IPEndPoint>(); // Коллекция подписанных пользователей
         private bool _isRunning;
         private readonly int _port;
-        private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancel = new CancellationTokenSource();// для остановки асинхр. операций
 
-        public event Action<string> DataReceived;
-        public event Action<string> LogMessage;  // Новое событие для логгирования
+        public event Action<string> DataReceived;// События, при получении данных от клиента
+        public event Action<string> LogMessage; // Вывод в UI
 
         public UdpDataServer(int port)
         {
@@ -28,24 +28,12 @@ namespace LudControl.Models
         public async Task StartAsync()
         {
             _isRunning = true;
-            OnLogMessage("[UDP] Сервер запущен");
-
-            try
+            
+            while (_isRunning && !_cancel.Token.IsCancellationRequested)
             {
-                while (_isRunning && !_cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    var result = await _udpServer.ReceiveAsync(_cancellationTokenSource.Token);
-                    ProcessMessage(result);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                OnLogMessage("[UDP] Сервер остановлен по запросу");
-            }
-            catch (Exception ex)
-            {
-                OnLogMessage($"[UDP Error] {ex.Message}");
-            }
+                var result = await _udpServer.ReceiveAsync(_cancel.Token);
+                ProcessMessage(result);
+            }        
         }
 
         private void ProcessMessage(UdpReceiveResult result)
@@ -100,8 +88,7 @@ namespace LudControl.Models
             if (!_isRunning) return;
 
             _isRunning = false;
-            _cancellationTokenSource.Cancel();
-            OnLogMessage("[UDP] Сервер остановлен");
+            _cancel.Cancel();
         }
 
         protected virtual void OnLogMessage(string message)
@@ -113,7 +100,7 @@ namespace LudControl.Models
         {
             Stop();
             _udpServer?.Dispose();
-            _cancellationTokenSource?.Dispose();
+            _cancel?.Dispose();
             GC.SuppressFinalize(this);
         }
     }
