@@ -18,16 +18,19 @@ namespace LudControl
 
         public MainViewModel()
         {
-            _udpClient = new UdpClient(); // Автоматический выбор порта
-            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            // Не работает без явной привязки к локальному порту
+            // Но не даёт использовать порт, который уже используется сервером (62126)
+            _udpClient = new UdpClient(62127);
+
+            // 
+            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, 62126);
             _tcpClient = new TcpClient();
 
-            StartCommand = new RelayCommand(_ => Start());
+            StartCommand = new RelayCommand(_ => Receiver("Start"));
+            StopCommand = new RelayCommand(_ => Receiver("Stop"));
+            //ExitCommand = new RelayCommand(_ => 
             AddMeCommand = new RelayCommand(_ => Subscribe("ADD_ME"));
             DelMeCommand = new RelayCommand(_ => Subscribe("DELL_ME"));
-
-            // Запускаем асинхронный приёмник в фоновом потоке
-            Task.Run(() => UdpReceiverAsync(_cts.Token));
         }
 
         public ICommand StartCommand { get; }
@@ -52,14 +55,16 @@ namespace LudControl
             _udpClient.Send(data, data.Length, _serverEndPoint);
         }
 
-        private void Start()
+        private void Receiver(string command)
         {
             if (!_tcpClient.Connected)
             _tcpClient.Connect("127.0.0.1", 62125);
 
             NetworkStream stream = _tcpClient.GetStream();
-            byte[] data = Encoding.UTF8.GetBytes("Start");
+            byte[] data = Encoding.UTF8.GetBytes(command);
             stream.Write(data, 0, data.Length);
+
+            Task.Run(() => UdpReceiverAsync(_cts.Token));
         }
 
         private async Task UdpReceiverAsync(CancellationToken cancellationToken)

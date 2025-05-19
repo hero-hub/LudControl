@@ -11,7 +11,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="75"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
@@ -31,14 +31,6 @@
             Model="{Binding PlotModel}"
             Margin="5"/>-->
         
-        <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2"
-            VerticalScrollBarVisibility="Auto">
-            <TextBlock Text="{Binding CommandViewer}" 
-               Margin="5,0"
-               TextWrapping="Wrap" 
-               FontSize="15"/>
-        </ScrollViewer>
-        
         <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="5">
             <Button 
                 Content="Start"
@@ -56,5 +48,13 @@
                 Width="80" 
                 Margin="5,0"/>
         </StackPanel>
+
+        <ScrollViewer Grid.Row="2" Grid.ColumnSpan="2"
+            VerticalScrollBarVisibility="Auto">
+            <TextBlock Text="{Binding CommandViewer}" 
+                       Margin="5,0"
+                       TextWrapping="Wrap" 
+                       FontSize="15" Height="104"/>
+        </ScrollViewer>
     </Grid>
 </Window>
