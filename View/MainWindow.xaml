@@ -6,12 +6,13 @@
         xmlns:local="clr-namespace:LudControl"
         xmlns:oxy="http://oxyplot.org/wpf" d:DataContext="{d:DesignInstance Type=local:MainViewModel}"
         mc:Ignorable="d"
-        Title="MainWindow" Height="300" Width="500">
+        Title="MainWindow" Height="500" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="35"/>
             <RowDefinition Height="35"/>
-            <RowDefinition Height="75"/>
+            <RowDefinition Height="80"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
@@ -25,18 +26,13 @@
                 Width="80" Margin="5,0"/>
         </StackPanel>
 
-        <!--<oxy:PlotView x:Name="plotView"
-            Grid.Row="1"
-            Grid.ColumnSpan="2"
-            Model="{Binding PlotModel}"
-            Margin="5"/>-->
-        
+
         <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Margin="5">
             <Button 
                 Content="Start"
                 Command="{Binding StartCommand}"
                 Width="80" 
-                Margin="5,0" RenderTransformOrigin="0.5,0.455"/>
+                RenderTransformOrigin="0.5,0.7"/>
             <Button 
                 Content="Stop" 
                 Command="{Binding Stop}"
@@ -54,7 +50,13 @@
             <TextBlock Text="{Binding CommandViewer}" 
                        Margin="5,0"
                        TextWrapping="Wrap" 
-                       FontSize="15" Height="104"/>
+                       FontSize="15" Height="94" Width="475"/>
         </ScrollViewer>
+
+        <oxy:PlotView x:Name="plotView"
+            Grid.Row="3"
+            Grid.ColumnSpan="2"
+            Model="{Binding PlotModel}"
+            Margin="5"/>
     </Grid>
 </Window>
