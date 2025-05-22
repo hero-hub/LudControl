@@ -21,12 +21,13 @@ namespace LudControl
 
         public MainViewModel()
         {
-            _udpClient = new UdpClient(62127); // Привязка к локальному порту 62127
-            _serverEndPoint = new IPEndPoint(IPAddress.Loopback, 62126); // Серверный порт
+            _udpClient = new UdpClient(); // Привязка к локальному порту 62127
+            _udpClient.Connect("127.0.0.1", 62126);
+            _serverEndPoint = new IPEndPoint(IPAddress.Any, 62126); // Серверный порт
             _tcpClient = new TcpClient();
 
             SetupPlot();
-            StartCommand = new RelayCommand(async _ => await ManagerAsync("Start"));
+            StartCommand = new RelayCommand(async _ => await ManagerAsync("start"));
             StopCommand = new RelayCommand(_ => Dispose());
             AddMeCommand = new RelayCommand(async _ => await SubscribeAsync("ADD_ME"));
             DelMeCommand = new RelayCommand(async _ => await SubscribeAsync("DELL_ME"));
@@ -65,7 +66,7 @@ namespace LudControl
             try
             {
                 byte[] data = Encoding.UTF8.GetBytes(command);
-                await _udpClient.SendAsync(data, data.Length, _serverEndPoint);
+                 _udpClient.Send(data, data.Length);
             }
             catch (Exception ex)
             {
@@ -82,7 +83,7 @@ namespace LudControl
             {
                 if (!_tcpClient.Connected)
                 {
-                    await _tcpClient.ConnectAsync("127.0.0.1", 62125)
+                    await _tcpClient.ConnectAsync("127.0.0.1", 62125);
                 }
 
                 NetworkStream stream = _tcpClient.GetStream();
@@ -104,8 +105,8 @@ namespace LudControl
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync();
-                    byte[] buffer = result.Buffer;
+                    IPEndPoint dd = new IPEndPoint(IPAddress.Any, 62126);
+                    byte[] buffer = _udpClient.Receive(ref dd);
 
                     UInt16[] data = new UInt16[buffer.Length / 2];
                     for (int i = 0; i < data.Length; i++)
@@ -115,10 +116,8 @@ namespace LudControl
 
                     System.Windows.Application.Current.Dispatcher.Invoke(() =>
                     {
-                        CommandViewer += $"Получено по UDP {data.Length} значений UInt16 от {result.RemoteEndPoint}\n";
                         PlotSignal(data);
                     });
-
 
                 }
             }
