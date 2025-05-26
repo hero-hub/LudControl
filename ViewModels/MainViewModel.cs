@@ -11,7 +11,7 @@ using System.Collections.Concurrent;
 
 namespace LudControl
 {
-    public class MainViewModel : INotifyPropertyChanged, IDisposable
+    public class MainViewModel : INotifyPropertyChanged
     {
         private PlotModel _plotModel;
         private readonly TcpClient _tcpClient;
@@ -32,7 +32,7 @@ namespace LudControl
             SetupPlot();
             StartCommand = new RelayCommand(async _ => await ManagerAsync("start"));
             StopCommand = new RelayCommand(async _ => await ManagerAsync("stop"));
-            ExitCommand = new RelayCommand(_ => Dispose());
+            ExitCommand = new RelayCommand(async _ => await ExitAsync());
             AddMeCommand = new RelayCommand(async _ => await SubscribeAsync("ADD_ME"));
             DelMeCommand = new RelayCommand(async _ => await SubscribeAsync("DELL_ME"));
 
@@ -90,7 +90,7 @@ namespace LudControl
                 {
                     await _tcpClient.ConnectAsync("127.0.0.1", 62125);
                 }
-                
+
                 NetworkStream stream = _tcpClient.GetStream();
                 byte[] data = Encoding.UTF8.GetBytes(command);
                 await stream.WriteAsync(data, 0, data.Length);
@@ -124,12 +124,6 @@ namespace LudControl
                         _dataBuffer.TryDequeue(out _);
                     }
                     _dataBuffer.Enqueue(data);
-
-                    //System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                    //{
-                    //    PlotSignal(data);
-                    //});
-
                 }
             }
             catch (Exception ex)
@@ -140,7 +134,6 @@ namespace LudControl
                 });
             }
         }
-
 
         private async Task RenderGraphAsync(CancellationToken cancellationToken)
         {
@@ -209,11 +202,15 @@ namespace LudControl
                 Title = "МКС"
             });
         }
-        public void Dispose()
+        private async Task ExitAsync()
         {
+            await ManagerAsync("stop");
+
             _cts.Cancel();
             _tcpClient?.Close();
             _udpClient?.Close();
+
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }
