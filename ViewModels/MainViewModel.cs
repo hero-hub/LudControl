@@ -8,23 +8,27 @@ using System.Text;
 using OxyPlot;
 using OxyPlot.Series;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Windows;
+using System.IO;
 
 namespace LudControl
 {
     public class MainViewModel : INotifyPropertyChanged
     {
+        private Process _process; // Для терминала сервера
         private PlotModel _plotModel;
         private readonly TcpClient _tcpClient;
         private readonly UdpClient _udpClient;
         private readonly IPEndPoint _serverEndPoint;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private string _commandViewer;
-        private readonly ConcurrentQueue<UInt16[]> _dataBuffer = new ConcurrentQueue<UInt16[]>();
+        private string _commandViewer; // окно сообщений (исключения и ошибки)
+        private readonly ConcurrentQueue<UInt16[]> _dataBuffer = new ConcurrentQueue<UInt16[]>(); // циклический буфер
         private const int BufferSize = 500;
 
         public MainViewModel()
         {
-            _udpClient = new UdpClient(0); // 
+            _udpClient = new UdpClient(0); 
             _udpClient.Connect("127.0.0.1", 62126);
             _serverEndPoint = new IPEndPoint(IPAddress.Any, 62126); // Серверный порт
             _tcpClient = new TcpClient();
@@ -35,6 +39,7 @@ namespace LudControl
             ExitCommand = new RelayCommand(async _ => await ExitAsync());
             AddMeCommand = new RelayCommand(async _ => await SubscribeAsync("ADD_ME"));
             DelMeCommand = new RelayCommand(async _ => await SubscribeAsync("DELL_ME"));
+            ServerCommand = new RelayCommand(_ => ServerStart());
 
             Task.Run(() => UdpReceiverAsync(_cts.Token));
             Task.Run(() => RenderGraphAsync(_cts.Token));
@@ -45,6 +50,7 @@ namespace LudControl
         public ICommand ExitCommand { get; }
         public ICommand AddMeCommand { get; }
         public ICommand DelMeCommand { get; }
+        public ICommand ServerCommand { get; }
 
         public string CommandViewer
         {
@@ -210,7 +216,28 @@ namespace LudControl
             _tcpClient?.Close();
             _udpClient?.Close();
 
+            if (_process != null && !_process.HasExited)
+            {
+                _process.Kill();
+            }
             System.Windows.Application.Current.Shutdown();
+        }
+        private void ServerStart()
+        {
+            try
+            {
+                string currentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string pathToExe = Path.Combine(currentDirectory, "IndustrialLud.exe");
+
+                if (File.Exists(pathToExe))
+                {
+                    _process = Process.Start(pathToExe);
+                }
+            }
+            catch (Exception ex)
+            {
+                CommandViewer += $"Ошибка при запуске приложения: {ex.Message}\n";
+            }
         }
     }
 }

@@ -32,15 +32,20 @@
                 Content="Start"
                 Command="{Binding StartCommand}"
                 Width="80" 
-                RenderTransformOrigin="0.5,0.7"/>
+                Height="26"/>
             <Button 
                 Content="Stop" 
                 Command="{Binding StopCommand}"
                 Width="80" 
-                Margin="5,0"/>
+                Margin="9,0"/>
             <Button 
                 Content="Exit" 
                 Command="{Binding ExitCommand}"
+                Width="80" 
+                Margin="5,0"/>
+            <Button
+                Content="Start Server" 
+                Command="{Binding ServerCommand}"
                 Width="80" 
                 Margin="5,0"/>
         </StackPanel>
